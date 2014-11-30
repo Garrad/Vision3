@@ -20,9 +20,7 @@ using namespace cv;
 
 //Region is patch averaged over to get motion estimate
 //ASSUMPTION: Patch has constant motion
-#define REGION 10
 //Resolution is spatial resolution of image vectors
-#define RESOLUTION 20
 
 //Function headers
 float Ix(Mat frame_t, Mat frame_t2, int x, int y);
@@ -36,9 +34,14 @@ int main( int argc, const char** argv )
 {
 	cv::VideoCapture cap;
 	//Open video stream if possible
-	if(argc > 1)
+	if (argc < 3)
 	{
-		cap.open(string(argv[1]));
+		printf("Usage: region resolution (video)\n");
+		exit(1);
+	}
+	else if(argc > 3)
+	{
+		cap.open(string(argv[3]));
 	}
 	else
 	{
@@ -49,6 +52,9 @@ int main( int argc, const char** argv )
 		printf("Error: could not load a camera or video.\n");
 	}
 
+	int region = atoi(argv[1]);
+	int resolution = atoi(argv[2]);
+
 	//Create variables for various frames
 	Mat color_current_frame;
 	Mat current_frame;
@@ -58,7 +64,7 @@ int main( int argc, const char** argv )
 	Mat v;
 
 	//Color of motion vector line
-	Scalar red = CV_RGB(0,255,0);
+	Scalar red = CV_RGB(255,0,0);
 
 	//Frame count; used to ensure we have both current and prior data to use
 	int frame_count = 0;
@@ -100,8 +106,8 @@ int main( int argc, const char** argv )
 		if (frame_count == 0)
 		{
 			printf("Image dimensions are: (%d, %d)\n", nRows, nCols);
-			ystep = nRows / RESOLUTION;
-			xstep = nCols / RESOLUTION;
+			ystep = nRows / resolution;
+			xstep = nCols / resolution;
 			printf("Steps are (%d, %d)\n", xstep, ystep);
 		}
 
@@ -113,7 +119,7 @@ int main( int argc, const char** argv )
 				for (int j=0;j<nRows;j=j+ystep)
 				{
 					//Calc motion vectors
-					v = LkTracker(old_frame, current_frame, i, j, REGION);
+					v = LkTracker(old_frame, current_frame, i, j, region);
 					//printf("Vx = %f\n", (scaling*v.at<float>(0, 0)));
 					//printf("Vy = %f\n", (scaling*v.at<float>(1, 0)));
 
