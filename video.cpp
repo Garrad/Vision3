@@ -20,7 +20,7 @@ using namespace cv;
 
 //Region is patch averaged over to get motion estimate
 //ASSUMPTION: Patch has constant motion
-#define REGION 30
+#define REGION 10
 //Resolution is spatial resolution of image vectors
 #define RESOLUTION 20
 
