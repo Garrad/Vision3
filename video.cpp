@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <stdio.h>
+#include "GestureTrack.h"
 
 using namespace std;
 using namespace cv;
@@ -28,7 +29,6 @@ float Ix(Mat frame_t, Mat frame_t2, int x, int y);
 float Iy(Mat frame_t, Mat frame_t2, int x, int y);
 float It(Mat frame_t, Mat frame_t2, int x, int y);
 Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size);
-void GestureDetect(float x_sum, float y_sum, int count);
 static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int thickness, int line_type, int shift, double tipLength);
 
 
@@ -79,6 +79,9 @@ int main( int argc, const char** argv )
 	//namedWindow("Y Motion vectors", 1);
 	namedWindow("Motion vectors", 1);
 
+	//Create gesture tracker
+	GestureTrack GT;
+
 	//Main loop
 	for(;;)
 	{
@@ -128,11 +131,19 @@ int main( int argc, const char** argv )
 					float x_val = v.at<float>(0, 0);
 					float y_val = v.at<float>(1, 0);
 
-					if ((x_val * x_val) + (y_val*y_val) > 0)
+					if (frame_count <100)
 					{
-						x_sum += v.at<float>(0, 0);
-						y_sum += v.at<float>(1, 0);
-						count++;
+						GT.calibrate_noise(x_val, y_val);
+					}
+					else
+					{
+						float noise_threshold = GT.get_threshold();
+						if ((x_val * x_val) + (y_val*y_val) > noise_threshold)
+						{
+							x_sum += x_val;
+							y_sum += y_val;
+							count++;
+						}
 					}
 					//Create start point of motion vector
 					Point start = Point(i+xstep/2, j+ystep/2);
@@ -160,7 +171,19 @@ int main( int argc, const char** argv )
 		//printf("Mean vector is (%2.2f, %2.2f)\n", x_sum/count, y_sum/count);
 
 		//Detect Gestures
-		GestureDetect(x_sum, y_sum, count);
+		if (frame_count == 1)
+		{
+			printf("Calibrating noise\n");
+		}
+		else if (frame_count == 99)
+		{
+			printf("Noise calibrated: threshold = %f\n", GT.get_threshold());
+		}
+		else if (frame_count >= 100)
+		{
+			GT.add_frame(x_sum, y_sum, count);
+			GT.detect();
+		}
 
 		//Break if video has finished
 		if(!current_frame.data)
@@ -352,27 +375,6 @@ Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size)
 	}
 
 	return v;
-}
-
-void GestureDetect(float x_sum, float y_sum, int count)
-{
-		if (x_sum/count > 0.5)
-		{
-			printf("Moving left\n");
-		}
-		else if (x_sum/count < -0.5)
-		{
-			printf("Moving right\n");
-		}
-
-		if (y_sum/count > 0.5)
-		{
-			printf("Moving up\n");
-		}
-		else if (y_sum/count < -0.5)
-		{
-			printf("Moving down\n");
-		}
 }
 
 //Draw an arrowedLine instead of an arrow
