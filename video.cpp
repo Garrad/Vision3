@@ -181,8 +181,11 @@ int main( int argc, const char** argv )
 		}
 		else if (frame_count >= 100)
 		{
-			GT.add_frame(x_sum, y_sum, count);
-			GT.detect();
+			if (count > 0)
+			{
+				GT.add_frame(x_sum, y_sum, count);
+				GT.detect();
+			}
 		}
 
 		//Break if video has finished
