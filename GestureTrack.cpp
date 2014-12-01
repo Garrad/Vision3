@@ -34,12 +34,12 @@ void GestureTrack::detect()
 
 	mean_point.x = sum.x / motion_history.size();
 	mean_point.y = sum.y / motion_history.size();
-
+	/*
 	if (mean_point.x != 0 || mean_point.y != 0)
 	{
 		printf("Average point is: (%f, %f)\n", mean_point.x, mean_point.y);
 	}
-
+	*/
 	if (mean_point.x > motion_threshold && mean_point.y > motion_threshold)
 	{
 		printf("Moving down and left\n");

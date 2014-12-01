@@ -138,7 +138,7 @@ int main( int argc, const char** argv )
 					else
 					{
 						float noise_threshold = GT.get_threshold();
-						if ((x_val * x_val) + (y_val*y_val) > noise_threshold)
+						if ((x_val * x_val) + (y_val*y_val) > 2*noise_threshold)
 						{
 							x_sum += x_val;
 							y_sum += y_val;
@@ -206,7 +206,7 @@ int main( int argc, const char** argv )
 		key = waitKey(20);
 		//printf("%d\n", key);
 
-		if (frame_count > 500 || key == 113)
+		if (frame_count > 5000 || key == 113)
 		{
 			cap.release();
 			return 1;
