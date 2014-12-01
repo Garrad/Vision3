@@ -1,3 +1,4 @@
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // COMS30121 - video.cpp
@@ -6,11 +7,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // header inclusion
-#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/objdetect/objdetect.hpp"
-#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/opencv.hpp"
-#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/core/core.hpp"
-#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/highgui/highgui.hpp"
-#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/imgproc/imgproc.hpp"
+#include "/usr/include/opencv2/objdetect/objdetect.hpp"
+#include "/usr/include/opencv2/opencv.hpp"
+#include "/usr/include/opencv2/core/core.hpp"
+#include "/usr/include/opencv2/highgui/highgui.hpp"
+#include "/usr/include/opencv2/imgproc/imgproc.hpp"
 
 #include <iostream>
 #include <stdio.h>
@@ -27,6 +28,7 @@ float Ix(Mat frame_t, Mat frame_t2, int x, int y);
 float Iy(Mat frame_t, Mat frame_t2, int x, int y);
 float It(Mat frame_t, Mat frame_t2, int x, int y);
 Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size);
+void GestureDetect(float x_sum, float y_sum, int count);
 static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int thickness, int line_type, int shift, double tipLength);
 
 
@@ -101,7 +103,7 @@ int main( int argc, const char** argv )
 		//Vars for holding mean vectors
 		float x_sum = 0;
 		float y_sum = 0;
-		float count = 0;
+		int count = 0;
 
 		if (frame_count == 0)
 		{
@@ -156,14 +158,9 @@ int main( int argc, const char** argv )
 		}
 
 		//printf("Mean vector is (%2.2f, %2.2f)\n", x_sum/count, y_sum/count);
-		if (x_sum/count > 0.5)
-		{
-			printf("Moving left\n");
-		}
-		else if (x_sum/count < -0.5)
-		{
-			printf("Moving right\n");
-		}
+
+		//Detect Gestures
+		GestureDetect(x_sum, y_sum, count);
 
 		//Break if video has finished
 		if(!current_frame.data)
@@ -179,7 +176,15 @@ int main( int argc, const char** argv )
 		//imwrite("v.jpg", v);
 		imshow("Motion vectors", color_current_frame);
 		//imshow("video", current_frame);
-		waitKey(2);
+		int key;
+		key = waitKey(20);
+		//printf("%d\n", key);
+
+		if (frame_count > 500 || key == 113)
+		{
+			cap.release();
+			return 1;
+		}
 	}
 }
 
@@ -349,6 +354,29 @@ Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size)
 	return v;
 }
 
+void GestureDetect(float x_sum, float y_sum, int count)
+{
+		if (x_sum/count > 0.5)
+		{
+			printf("Moving left\n");
+		}
+		else if (x_sum/count < -0.5)
+		{
+			printf("Moving right\n");
+		}
+
+		if (y_sum/count > 0.5)
+		{
+			printf("Moving up\n");
+		}
+		else if (y_sum/count < -0.5)
+		{
+			printf("Moving down\n");
+		}
+}
+
+//Draw an arrowedLine instead of an arrow
+//Shamelessly stolen from stackoverflow
 static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int line_type=8, int shift=0, double tipLength=0.1)
 {
     const double tipSize = norm(pt1-pt2)*tipLength; // Factor to normalize the size of the tip depending on the length of the arrow
