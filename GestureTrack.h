@@ -18,13 +18,14 @@ class GestureTrack
 		float noise_sum;
 		int noise_count;
 		float noise_threshold;
-		const static float motion_threshold=1.0;
-		const static int window_size = 20;
+
 	public:
+		float motion_threshold;
+		int window_size;
 		vector<Point> motion_history;
 		void calibrate_noise(float x_sum, float y_sum);
 		float get_threshold();
 		void add_frame(float x_sum, float y_sum, int count);
-		void detect();
+		Point2f detect();
 
 };

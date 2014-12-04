@@ -17,12 +17,22 @@
 #include <stdio.h>
 #include "GestureTrack.h"
 
+#include "gradients.h"
+#include "turtle.h"
+
 using namespace std;
 using namespace cv;
+
 
 //Region is patch averaged over to get motion estimate
 //ASSUMPTION: Patch has constant motion
 //Resolution is spatial resolution of image vectors
+
+// COMMAND LINE INPUTS
+// Region - region size
+// Resolution - resolution
+// ShowDerivatives - 1 shows Ix, Iy, It images, 0 hides
+// [video filename] - [optional path to video file]
 
 //Function headers
 float Ix(Mat frame_t, Mat frame_t2, int x, int y);
@@ -30,20 +40,21 @@ float Iy(Mat frame_t, Mat frame_t2, int x, int y);
 float It(Mat frame_t, Mat frame_t2, int x, int y);
 Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size);
 static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int thickness, int line_type, int shift, double tipLength);
+Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count);
 
 
 int main( int argc, const char** argv )
 {
 	cv::VideoCapture cap;
 	//Open video stream if possible
-	if (argc < 3)
+	if (argc < 4)
 	{
 		printf("Usage: region resolution (video)\n");
 		exit(1);
 	}
-	else if(argc > 3)
+	else if(argc > 4)
 	{
-		cap.open(string(argv[3]));
+		cap.open(string(argv[4]));
 	}
 	else
 	{
@@ -56,6 +67,7 @@ int main( int argc, const char** argv )
 
 	int region = atoi(argv[1]);
 	int resolution = atoi(argv[2]);
+	int showDerivatives = atoi(argv[3]);
 
 	//Create variables for various frames
 	Mat color_current_frame;
@@ -64,6 +76,10 @@ int main( int argc, const char** argv )
 	Mat x_motion_frame;
 	Mat y_motion_frame;
 	Mat v;
+
+	Mat IxMat;
+	Mat IyMat;
+	Mat ItMat;
 
 	//Color of motion vector line
 	Scalar red = CV_RGB(255,0,0);
@@ -81,6 +97,22 @@ int main( int argc, const char** argv )
 
 	//Create gesture tracker
 	GestureTrack GT;
+	GT.window_size = 20;
+	GT.motion_threshold = 1;
+
+	Target T;
+	T.init(XDIM, YDIM, TARGET_SIZE, BALL_RADIUS);
+
+	Mat game_img;
+	game_img = Mat::zeros(XDIM, YDIM, CV_8UC1);
+	namedWindow("Game", 1);
+
+
+	if (showDerivatives==1){
+		namedWindow("Ix",1);
+		namedWindow("Iy",1);
+		namedWindow("It",1);
+	}
 
 	//Main loop
 	for(;;)
@@ -91,6 +123,17 @@ int main( int argc, const char** argv )
 		//Get new frame and grayscale
 		cap >> color_current_frame;
 		cvtColor(color_current_frame, current_frame, CV_BGR2GRAY);
+
+
+		// show images if needed
+		if(showDerivatives==1) {
+			if(old_frame.data) {
+				calcIMatrices(old_frame, current_frame, IxMat, IyMat, ItMat);
+				imshow("Ix",IxMat);
+				imshow("Iy",IyMat);
+				imshow("It",ItMat);
+			}
+		}
 		
 		//Initialise Mats
 		//x_motion_frame = Mat::zeros(current_frame.rows, current_frame.cols, CV_8UC1);
@@ -107,6 +150,9 @@ int main( int argc, const char** argv )
 		float x_sum = 0;
 		float y_sum = 0;
 		int count = 0;
+
+		// vector of rects for adding all lines together
+		vector<Rect> velVector;
 
 		if (frame_count == 0)
 		{
@@ -128,6 +174,8 @@ int main( int argc, const char** argv )
 					//printf("Vx = %f\n", (scaling*v.at<float>(0, 0)));
 					//printf("Vy = %f\n", (scaling*v.at<float>(1, 0)));
 
+					// Add point to velocity vector
+
 					float x_val = v.at<float>(0, 0);
 					float y_val = v.at<float>(1, 0);
 
@@ -143,6 +191,7 @@ int main( int argc, const char** argv )
 							x_sum += x_val;
 							y_sum += y_val;
 							count++;
+							velVector.push_back(Rect(i,j,v.at<float>(0,0),v.at<float>(1,0)));
 						}
 					}
 					//Create start point of motion vector
@@ -158,6 +207,7 @@ int main( int argc, const char** argv )
 					//line(y_motion_frame, start, Y_end, red, 1, 8);
 					arrowedLine(color_current_frame, start, end, red, 1, 8, 0, 0.1);
 
+
 					//Print debugging info
 					//printf("start = (%d, %d)\n", start.x, start.y);
 					//printf("X end = (%d, %d)\n", X_end.x, X_end.y);
@@ -169,6 +219,17 @@ int main( int argc, const char** argv )
 		}
 
 		//printf("Mean vector is (%2.2f, %2.2f)\n", x_sum/count, y_sum/count);
+
+		// get velocity within desired frame
+		Rect locationRect = Rect((nCols/2)-100,(nRows/2)-100,200,200);
+		Size velInRect;
+		cout << count << endl;
+		velInRect = getVelocityInFrame(locationRect, velVector, color_current_frame, &count);
+		cout << count << endl;
+		x_sum = velInRect.width;
+		y_sum=  velInRect.height;
+		Point2f mean_vec;
+		//count = 3; // NB: THIS IS ARBITARY DEPENDING ON RECTANGLE SIZE...
 
 		//Detect Gestures
 		if (frame_count == 1)
@@ -184,9 +245,16 @@ int main( int argc, const char** argv )
 			if (count > 0)
 			{
 				GT.add_frame(x_sum, y_sum, count);
-				GT.detect();
+				mean_vec = GT.detect();
 			}
 		}
+
+		game_img = Mat::zeros(XDIM, YDIM, CV_8UC1);
+		T.draw_target(game_img);
+		T.draw_ball(game_img);
+		T.move_ball(mean_vec.x, mean_vec.y);
+
+		
 
 		//Break if video has finished
 		if(!current_frame.data)
@@ -200,13 +268,17 @@ int main( int argc, const char** argv )
 		//imshow("X Motion vectors", x_motion_frame);
 		//imshow("Y Motion vectors", y_motion_frame);
 		//imwrite("v.jpg", v);
+		imshow("Ball", game_img);
 		imshow("Motion vectors", color_current_frame);
 		//imshow("video", current_frame);
 		int key;
 		key = waitKey(20);
 		//printf("%d\n", key);
 
-		if (frame_count > 5000 || key == 113)
+		// delete velocity vector
+		velVector.clear();
+
+		if (frame_count > 500 || key == 113)
 		{
 			cap.release();
 			return 1;
@@ -351,6 +423,7 @@ Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size)
 
 		v = (A.inv()*B);
 
+		// debug statements
 		//Debugging info.
 		//printf("A11 = %f\n", A.at<float>(0, 0));
 		//printf("A12 = %f\n", A.at<float>(0, 1));	
@@ -393,4 +466,37 @@ static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int 
     p.x = cvRound(pt2.x + tipSize * cos(angle - CV_PI / 4));
     p.y = cvRound(pt2.y + tipSize * sin(angle - CV_PI / 4));
     line(img, p, pt2, color, thickness, line_type);
+}
+
+
+Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count){
+	// Initialise size of velocity to return (default 0)
+	Size retVel = Size(0,0);
+	float x_val = 0.0;
+	float y_val = 0.0;
+
+	// draw vector onto image
+	rectangle(color_current_frame, locationRect, CV_RGB(0,255,0),1,8,0);
+	*count = 0;
+
+	// cycle through velocities
+	for (int i=0; i<velVector.size(); i++){
+		// check if within rectangle
+		if(velVector.at(i).x > locationRect.x && velVector.at(i).x < locationRect.x+locationRect.width) {
+			if (velVector.at(i).y > locationRect.y && velVector.at(i).y < locationRect.y+locationRect.height) {
+
+				// Point is within rectangle, use velocity value
+				x_val+=velVector.at(i).width;
+				y_val+=velVector.at(i).height;
+				(*count)++;
+				printf("Hit\n");
+
+			}
+		}
+	}
+
+	retVel.width = x_val;
+	retVel.height = y_val;
+
+	return(retVel);
 }

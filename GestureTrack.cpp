@@ -22,10 +22,9 @@ void GestureTrack::add_frame(float x_sum, float y_sum, int count)
 	}
 }
 
-void GestureTrack::detect()
+Point2f GestureTrack::detect()
 {
 	Point2f sum, mean_point;
-	int count;
 	for (int i = 0;i<motion_history.size();i++)
 	{
 		sum.x += motion_history.at(i).x;
@@ -34,12 +33,14 @@ void GestureTrack::detect()
 
 	mean_point.x = sum.x / motion_history.size();
 	mean_point.y = sum.y / motion_history.size();
-	/*
+	
+	cout << motion_history.size() << endl;
+
 	if (mean_point.x != 0 || mean_point.y != 0)
 	{
 		printf("Average point is: (%f, %f)\n", mean_point.x, mean_point.y);
 	}
-	*/
+	
 	if (mean_point.x > motion_threshold && mean_point.y > motion_threshold)
 	{
 		printf("Moving down and left\n");
@@ -74,5 +75,11 @@ void GestureTrack::detect()
 	}
 
 
-	return;
+	return mean_point;
 }
+
+/*
+int main()
+{
+	return 1;
+}*/
