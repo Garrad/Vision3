@@ -1,8 +1,8 @@
-#include "/usr/include/opencv2/objdetect/objdetect.hpp"
-#include "/usr/include/opencv2/opencv.hpp"
-#include "/usr/include/opencv2/core/core.hpp"
-#include "/usr/include/opencv2/highgui/highgui.hpp"
-#include "/usr/include/opencv2/imgproc/imgproc.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/objdetect/objdetect.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/opencv.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/core/core.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/highgui/highgui.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/imgproc/imgproc.hpp"
 
 #include <iostream>
 #include <stdio.h>
@@ -37,11 +37,13 @@ private:
 	Rect topRect;
 	Rect bottomRect;
 	Rect sideRect;
-	Rect ballRect;
+
 
 public:
 	void init(int max_x, int max_y, int area, int radius);
 	void draw_target(Mat image);
 	void draw_ball(Mat image);
 	void move_ball(float x, float y);
+	Rect ballRect;
+	Rect targetRect;
 };

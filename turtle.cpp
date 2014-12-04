@@ -1,6 +1,6 @@
 #include "turtle.h"
 
-void Target::init(int max_x, int max_y, int area, int rad)
+void Target::init(int max_y, int max_x, int area, int rad)
 {
 
 	//Store image dims
@@ -15,6 +15,7 @@ void Target::init(int max_x, int max_y, int area, int rad)
 	topRect = cvRect(xpos, ypos, size, 1);
 	bottomRect = cvRect(xpos, ypos+size, size, 1);
 	sideRect = cvRect(xpos+size, ypos, 1, size);
+	targetRect = cvRect(xpos, ypos, size, size);
 
     //Set initial x, y position
 	ball_x = max_x / 4;
@@ -37,10 +38,10 @@ void Target::draw_target(Mat image)
 	line(image, Point(xpos, ypos), Point(xpos+size, ypos), white, 1);
 	line(image, Point(xpos+size, ypos), Point(xpos+size, ypos+size), white, 1);
 	line(image, Point(xpos, ypos+size), Point(xpos+size, ypos+size), white, 1);
-
-	rectangle(image, topRect, white);
-	rectangle(image, bottomRect, white);
-	rectangle(image, sideRect, white);
+	//Draw colliding rectangles when debugging
+	//rectangle(image, topRect, white);
+	//rectangle(image, bottomRect, white);
+	//rectangle(image, sideRect, white);
 
 }
 
@@ -50,7 +51,8 @@ void Target::draw_ball(Mat image)
 	//Draw ball
 	circle(image, Point(ball_x, ball_y), radius, white);
 	//printf("Ball pos is (%d, %d)", ball_x, ball_y);
-	rectangle(image, ballRect, white);
+	//Draw bounding rect when debugging
+	//rectangle(image, ballRect, white);
 }
 
 void Target::move_ball(float x, float y)

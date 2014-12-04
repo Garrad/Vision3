@@ -7,11 +7,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // header inclusion
-#include "/usr/include/opencv2/objdetect/objdetect.hpp"
-#include "/usr/include/opencv2/opencv.hpp"
-#include "/usr/include/opencv2/core/core.hpp"
-#include "/usr/include/opencv2/highgui/highgui.hpp"
-#include "/usr/include/opencv2/imgproc/imgproc.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/objdetect/objdetect.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/opencv.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/core/core.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/highgui/highgui.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/imgproc/imgproc.hpp"
 
 #include <iostream>
 #include <stdio.h>
@@ -19,6 +19,7 @@
 
 #include "gradients.h"
 #include "turtle.h"
+#define MAX_FRAME 1000
 
 using namespace std;
 using namespace cv;
@@ -42,10 +43,43 @@ Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size);
 static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int thickness, int line_type, int shift, double tipLength);
 Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count, int gamePlay);
 
-
 int main( int argc, const char** argv )
 {
 	cv::VideoCapture cap;
+	Mat color_current_frame;
+	Mat current_frame;
+	Mat old_frame;
+	Mat v;
+
+	Mat IxMat;
+	Mat IyMat;
+	Mat ItMat;
+
+	//Create gesture tracker
+	GestureTrack GT;
+	GT.window_size = 20;
+	GT.motion_threshold = 1;
+
+	Size gameFrameSize;
+	int XDIM;
+	int YDIM;
+	int score;
+	int hasGameStarted;
+	Target T;
+	srand (time(NULL));
+
+	//Color of motion vector line
+	Scalar red = CV_RGB(255,0,0);
+	//Frame count; used to ensure we have both current and prior data to use
+	int frame_count = 0;
+	//Scaling factor; this should be calculated rather than set
+	int scaling = 10;
+
+	//Get command line args
+	int region = atoi(argv[1]);
+	int resolution = atoi(argv[2]);
+	int showDerivatives = atoi(argv[3]);
+
 	//Open video stream if possible
 	if (argc < 4)
 	{
@@ -65,55 +99,14 @@ int main( int argc, const char** argv )
 		printf("Error: could not load a camera or video.\n");
 	}
 
-	int region = atoi(argv[1]);
-	int resolution = atoi(argv[2]);
-	int showDerivatives = atoi(argv[3]);
-
-	//Create variables for various frames
-	Mat color_current_frame;
-	Mat current_frame;
-	Mat old_frame;
-	Mat x_motion_frame;
-	Mat y_motion_frame;
-	Mat v;
-
-	Mat IxMat;
-	Mat IyMat;
-	Mat ItMat;
-
-	//Color of motion vector line
-	Scalar red = CV_RGB(255,0,0);
-
-	//Frame count; used to ensure we have both current and prior data to use
-	int frame_count = 0;
-	//Scaling factor; this should be calculated rather than set
-	int scaling = 10;
-
 	//Windows for displaying vector components
 	//namedWindow("video", 1);
 	//namedWindow("X Motion vectors", 1);
 	//namedWindow("Y Motion vectors", 1);
 	namedWindow("Motion vectors", 1);
 
-	//Create gesture tracker
-	GestureTrack GT;
-	GT.window_size = 20;
-	GT.motion_threshold = 1;
-
 	// Initialise game code
 	// Set dimensions equal to window size
-	cap >> color_current_frame;
-	Size gameFrameSize = color_current_frame.size();
-	int XDIM = gameFrameSize.height;
-	int YDIM = gameFrameSize.width;
-	Target T;
-	T.init(XDIM, YDIM, TARGET_SIZE, BALL_RADIUS);
-	int hasGameStarted = 0;
-
-	Mat game_img;
-	game_img = Mat::zeros(XDIM, YDIM, CV_8UC1);
-	namedWindow("Game", 1);
-
 
 	if (showDerivatives==1){
 		namedWindow("Ix",1);
@@ -167,6 +160,15 @@ int main( int argc, const char** argv )
 			ystep = nRows / resolution;
 			xstep = nCols / resolution;
 			printf("Steps are (%d, %d)\n", xstep, ystep);
+			
+			// Initialise game code
+			// Set dimensions equal to window size
+			gameFrameSize = color_current_frame.size();
+			XDIM = gameFrameSize.height;
+			YDIM = gameFrameSize.width;
+			T.init(XDIM, YDIM, TARGET_SIZE, BALL_RADIUS);
+			hasGameStarted = 0;
+			score=0;
 		}
 
 		//Loop through images
@@ -182,16 +184,17 @@ int main( int argc, const char** argv )
 					//printf("Vy = %f\n", (scaling*v.at<float>(1, 0)));
 
 					// Add point to velocity vector
-
 					float x_val = v.at<float>(0, 0);
 					float y_val = v.at<float>(1, 0);
 
+					//Calibrate noise threshold
 					if (frame_count <100)
 					{
 						GT.calibrate_noise(x_val, y_val);
 					}
 					else
 					{
+						//Detect motion vectors above noise threshold
 						float noise_threshold = GT.get_threshold();
 						if ((x_val * x_val) + (y_val*y_val) > 2*noise_threshold)
 						{
@@ -201,6 +204,7 @@ int main( int argc, const char** argv )
 							velVector.push_back(Rect(i,j,v.at<float>(0,0),v.at<float>(1,0)));
 						}
 					}
+
 					//Create start point of motion vector
 					Point start = Point(i+xstep/2, j+ystep/2);
 
@@ -213,7 +217,6 @@ int main( int argc, const char** argv )
 					//line(x_motion_frame, start, X_end, red, 1, 8);
 					//line(y_motion_frame, start, Y_end, red, 1, 8);
 					arrowedLine(color_current_frame, start, end, red, 1, 8, 0, 0.1);
-
 
 					//Print debugging info
 					//printf("start = (%d, %d)\n", start.x, start.y);
@@ -228,15 +231,14 @@ int main( int argc, const char** argv )
 		//printf("Mean vector is (%2.2f, %2.2f)\n", x_sum/count, y_sum/count);
 
 		// get velocity within desired frame
-		Rect locationRect = Rect((nCols/2)-100,(nRows/2)-100,200,200);
+
+		Rect locationRect = Rect((nCols/4),(nRows/4),nCols/2,nRows/2);
 		Size velInRect;
-		cout << count << endl;
 		velInRect = getVelocityInFrame(locationRect, velVector, color_current_frame, &count, hasGameStarted);
 		
 		x_sum = velInRect.width;
 		y_sum=  velInRect.height;
 		Point2f mean_vec;
-		//count = 3; // NB: THIS IS ARBITARY DEPENDING ON RECTANGLE SIZE...
 
 		//Detect Gestures
 		if (frame_count == 1)
@@ -255,14 +257,25 @@ int main( int argc, const char** argv )
 				GT.add_frame(x_sum, y_sum, count);
 				mean_vec = GT.detect();
 			}
+
+			T.draw_target(color_current_frame);
+			T.draw_ball(color_current_frame);
+			T.move_ball(-mean_vec.x, mean_vec.y);
+
+			char* score_string;
+			sprintf(score_string, "Score: %d", score);
+			cv::putText(color_current_frame,score_string,cvPoint(20,20),1,1,cvScalar(255));
+
+			//Restart if we are at the target
+			Rect intersec;
+			intersec = T.ballRect & T.targetRect;
+			//printf("Intersection is (%d, %d), (%d, %d)\n", intersec.x, intersec.y, intersec.width, intersec.height);
+			if (intersec.width == 2 * BALL_RADIUS && intersec.height == BALL_RADIUS * 2)
+			{
+				T.init(XDIM, YDIM, TARGET_SIZE, BALL_RADIUS);
+				score++;
+			}
 		}
-
-		game_img = Mat::zeros(XDIM, YDIM, CV_8UC1);
-		T.draw_target(game_img);
-		T.draw_ball(game_img);
-		T.move_ball(mean_vec.x, mean_vec.y);
-
-		
 
 		//Break if video has finished
 		if(!current_frame.data)
@@ -276,17 +289,17 @@ int main( int argc, const char** argv )
 		//imshow("X Motion vectors", x_motion_frame);
 		//imshow("Y Motion vectors", y_motion_frame);
 		//imwrite("v.jpg", v);
-		imshow("Ball", game_img);
+		//imshow("Game", game_img);
 		imshow("Motion vectors", color_current_frame);
 		//imshow("video", current_frame);
 		int key;
-		key = waitKey(20);
+		key = waitKey(10);
 		//printf("%d\n", key);
 
 		// delete velocity vector
 		velVector.clear();
 
-		if (frame_count > 500 || key == 113)
+		if (frame_count > MAX_FRAME || key == 113)
 		{
 			cap.release();
 			return 1;
@@ -478,6 +491,7 @@ static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int 
 
 
 Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count, int gamePlay){
+	
 	// Initialise size of velocity to return (default 0)
 	Size retVel = Size(0,0);
 	float x_val = 0.0;
@@ -485,12 +499,16 @@ Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_cu
 
 	// draw vector onto image
 	if (gamePlay==1)
+	{
 		rectangle(color_current_frame, locationRect, CV_RGB(0,255,0),1,8,0);
+	}
 	else
+	{
 		rectangle(color_current_frame, locationRect, CV_RGB(255,0,0),1,8,0);
+	}
 
+	//Reset counter to zero
 	*count = 0;
-
 	// cycle through velocities
 	for (int i=0; i<velVector.size(); i++){
 		// check if within rectangle
@@ -500,11 +518,13 @@ Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_cu
 				// Point is within rectangle, use velocity value
 				x_val+=velVector.at(i).width;
 				y_val+=velVector.at(i).height;
+				//Increment count
 				(*count)++;
 			}
 		}
 	}
 
+	//Return values
 	retVel.width = x_val;
 	retVel.height = y_val;
 

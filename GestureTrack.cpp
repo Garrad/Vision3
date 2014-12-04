@@ -34,8 +34,7 @@ Point2f GestureTrack::detect()
 	mean_point.x = sum.x / motion_history.size();
 	mean_point.y = sum.y / motion_history.size();
 	
-	cout << motion_history.size() << endl;
-
+	/*
 	if (mean_point.x != 0 || mean_point.y != 0)
 	{
 		printf("Average point is: (%f, %f)\n", mean_point.x, mean_point.y);
@@ -73,7 +72,7 @@ Point2f GestureTrack::detect()
 	{
 		printf("Moving down\n");
 	}
-
+    */
 
 	return mean_point;
 }
