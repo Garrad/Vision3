@@ -40,7 +40,7 @@ float Iy(Mat frame_t, Mat frame_t2, int x, int y);
 float It(Mat frame_t, Mat frame_t2, int x, int y);
 Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size);
 static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int thickness, int line_type, int shift, double tipLength);
-Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count);
+Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count, int gamePlay);
 
 
 int main( int argc, const char** argv )
@@ -108,6 +108,7 @@ int main( int argc, const char** argv )
 	int YDIM = gameFrameSize.width;
 	Target T;
 	T.init(XDIM, YDIM, TARGET_SIZE, BALL_RADIUS);
+	int hasGameStarted = 0;
 
 	Mat game_img;
 	game_img = Mat::zeros(XDIM, YDIM, CV_8UC1);
@@ -230,7 +231,7 @@ int main( int argc, const char** argv )
 		Rect locationRect = Rect((nCols/2)-100,(nRows/2)-100,200,200);
 		Size velInRect;
 		cout << count << endl;
-		velInRect = getVelocityInFrame(locationRect, velVector, color_current_frame, &count);
+		velInRect = getVelocityInFrame(locationRect, velVector, color_current_frame, &count, hasGameStarted);
 		cout << count << endl;
 		x_sum = velInRect.width;
 		y_sum=  velInRect.height;
@@ -245,6 +246,7 @@ int main( int argc, const char** argv )
 		else if (frame_count == 99)
 		{
 			printf("Noise calibrated: threshold = %f\n", GT.get_threshold());
+			hasGameStarted = 1;
 		}
 		else if (frame_count >= 100)
 		{
@@ -475,14 +477,18 @@ static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int 
 }
 
 
-Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count){
+Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count, int gamePlay){
 	// Initialise size of velocity to return (default 0)
 	Size retVel = Size(0,0);
 	float x_val = 0.0;
 	float y_val = 0.0;
 
 	// draw vector onto image
-	rectangle(color_current_frame, locationRect, CV_RGB(0,255,0),1,8,0);
+	if (gamePlay==1)
+		rectangle(color_current_frame, locationRect, CV_RGB(0,255,0),1,8,0);
+	else
+		rectangle(color_current_frame, locationRect, CV_RGB(255,0,0),1,8,0);
+
 	*count = 0;
 
 	// cycle through velocities
@@ -495,8 +501,6 @@ Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_cu
 				x_val+=velVector.at(i).width;
 				y_val+=velVector.at(i).height;
 				(*count)++;
-				printf("Hit\n");
-
 			}
 		}
 	}
