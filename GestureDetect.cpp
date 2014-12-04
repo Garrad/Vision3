@@ -73,10 +73,10 @@ class GestureDetect
 			}
 		}
 };
-
+/*
 int main()
 {
 	GestureDetect GD;
 	GD.train();
 	return 1;
-}
+}*/

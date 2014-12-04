@@ -23,6 +23,12 @@ using namespace cv;
 //ASSUMPTION: Patch has constant motion
 //Resolution is spatial resolution of image vectors
 
+// COMMAND LINE INPUTS
+// Region - region size
+// Resolution - resolution
+// ShowDerivatives - 1 shows Ix, Iy, It images, 0 hides
+// [video filename] - [optional path to video file]
+
 //Function headers
 float Ix(Mat frame_t, Mat frame_t2, int x, int y);
 float Iy(Mat frame_t, Mat frame_t2, int x, int y);
@@ -36,14 +42,14 @@ int main( int argc, const char** argv )
 {
 	cv::VideoCapture cap;
 	//Open video stream if possible
-	if (argc < 3)
+	if (argc < 4)
 	{
 		printf("Usage: region resolution (video)\n");
 		exit(1);
 	}
-	else if(argc > 3)
+	else if(argc > 4)
 	{
-		cap.open(string(argv[3]));
+		cap.open(string(argv[4]));
 	}
 	else
 	{
@@ -56,6 +62,7 @@ int main( int argc, const char** argv )
 
 	int region = atoi(argv[1]);
 	int resolution = atoi(argv[2]);
+	int showDerivatives = atoi(argv[3]);
 
 	//Create variables for various frames
 	Mat color_current_frame;
