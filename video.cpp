@@ -64,8 +64,8 @@ int main( int argc, const char** argv )
 
 	int region = atoi(argv[1]);
 	int resolution = atoi(argv[2]);
-	//int showDerivatives = atoi(argv[3]);
-	int showDerivatives=1;
+	int showDerivatives = atoi(argv[3]);
+
 	//Create variables for various frames
 	Mat color_current_frame;
 	Mat current_frame;

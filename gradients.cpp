@@ -58,7 +58,7 @@ void calcIMatrices(Mat prevFrame, Mat currFrame, Mat &Ix, Mat &Iy, Mat &It) {
 			Ix.at<uchar>(j,i) = (result+256)/2;
 		}
 	}
-	/*
+	
 	// Calculate Iy:
 	for (int i=0; i<=imSize.width; i++) {
 		for (int j=1; j<=imSize.height-1; j++) {
@@ -84,5 +84,5 @@ void calcIMatrices(Mat prevFrame, Mat currFrame, Mat &Ix, Mat &Iy, Mat &It) {
 			It.at<uchar>(j,i) = (result + 5*256) / (10);
 		}
 	}
-	*/
+	
 }
