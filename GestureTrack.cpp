@@ -30,8 +30,8 @@ void GestureTrack::calibrate_noise(float x_sum, float y_sum)
 	noise_threshold = noise_sum / noise_count;
 }
 
-/*
+
 int main()
 {
 	return 1;
-}*/
+}
