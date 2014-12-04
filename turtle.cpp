@@ -69,12 +69,24 @@ int main()
 	Mat img;
 	img = Mat::zeros(800, 600, CV_8UC1);
 
-	T.draw_target(img);
-	T.draw_ball(img, 20);
+	int key;
 
-	namedWindow("Ball", 1);
 
-	imshow("Ball", img);
-	waitKey(0);
+	for (;;)
+	{
+		T.draw_target(img);
+		T.draw_ball(img, 20);
+
+		namedWindow("Ball", 1);
+
+		imshow("Ball", img);
+		key = waitKey(0);
+
+		if (key == 'q')
+		{
+			break;
+		}
+		else if (key == 'UP')
+	}
 
 }
