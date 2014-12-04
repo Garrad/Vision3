@@ -14,8 +14,8 @@ using namespace cv;
 #include <random>
 #define DRAG 0.9
 #define STEP 5
-#define XDIM 400
-#define YDIM 600
+//#define XDIM 400
+//#define YDIM 600
 #define TARGET_SIZE 50
 #define BALL_RADIUS 20
 #define DELAY 10

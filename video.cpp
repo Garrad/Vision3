@@ -100,6 +100,12 @@ int main( int argc, const char** argv )
 	GT.window_size = 20;
 	GT.motion_threshold = 1;
 
+	// Initialise game code
+	// Set dimensions equal to window size
+	cap >> color_current_frame;
+	Size gameFrameSize = color_current_frame.size();
+	int XDIM = gameFrameSize.height;
+	int YDIM = gameFrameSize.width;
 	Target T;
 	T.init(XDIM, YDIM, TARGET_SIZE, BALL_RADIUS);
 
