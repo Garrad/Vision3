@@ -232,7 +232,7 @@ int main( int argc, const char** argv )
 		Size velInRect;
 		cout << count << endl;
 		velInRect = getVelocityInFrame(locationRect, velVector, color_current_frame, &count, hasGameStarted);
-		cout << count << endl;
+		
 		x_sum = velInRect.width;
 		y_sum=  velInRect.height;
 		Point2f mean_vec;
