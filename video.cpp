@@ -136,6 +136,9 @@ int main( int argc, const char** argv )
 		float y_sum = 0;
 		int count = 0;
 
+		// vector of rects for adding all lines together
+		vector<Rect> velVector;
+
 		if (frame_count == 0)
 		{
 			printf("Image dimensions are: (%d, %d)\n", nRows, nCols);
@@ -155,6 +158,9 @@ int main( int argc, const char** argv )
 					v = LkTracker(old_frame, current_frame, i, j, region);
 					//printf("Vx = %f\n", (scaling*v.at<float>(0, 0)));
 					//printf("Vy = %f\n", (scaling*v.at<float>(1, 0)));
+
+					// Add point to velocity vector
+					velVector.push_back(Rect(i,j,v.at<float>(0,0),v.at<float>(1,0)));
 
 					float x_val = v.at<float>(0, 0);
 					float y_val = v.at<float>(1, 0);
@@ -210,6 +216,9 @@ int main( int argc, const char** argv )
 		int key;
 		key = waitKey(20);
 		//printf("%d\n", key);
+
+		// delete velocity vector
+		velVector.clear();
 
 		if (frame_count > 500 || key == 113)
 		{
@@ -356,6 +365,7 @@ Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size)
 
 		v = (A.inv()*B);
 
+		// debug statements
 		//Debugging info.
 		//printf("A11 = %f\n", A.at<float>(0, 0));
 		//printf("A12 = %f\n", A.at<float>(0, 1));	
