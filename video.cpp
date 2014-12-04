@@ -38,6 +38,7 @@ float It(Mat frame_t, Mat frame_t2, int x, int y);
 Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size);
 void GestureDetect(float x_sum, float y_sum, int count);
 static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int thickness, int line_type, int shift, double tipLength);
+Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame);
 
 
 int main( int argc, const char** argv )
@@ -184,6 +185,7 @@ int main( int argc, const char** argv )
 					//line(y_motion_frame, start, Y_end, red, 1, 8);
 					arrowedLine(color_current_frame, start, end, red, 1, 8, 0, 0.1);
 
+
 					//Print debugging info
 					//printf("start = (%d, %d)\n", start.x, start.y);
 					//printf("X end = (%d, %d)\n", X_end.x, X_end.y);
@@ -195,6 +197,15 @@ int main( int argc, const char** argv )
 		}
 
 		//printf("Mean vector is (%2.2f, %2.2f)\n", x_sum/count, y_sum/count);
+
+		// get velocity within desired frame
+		Rect locationRect = Rect(20,20,100,200);
+		Size velInRect;
+		velInRect = getVelocityInFrame(locationRect, velVector, color_current_frame);
+
+		x_sum = velInRect.width;
+		y_sum=  velInRect.height;
+		count = (int)((locationRect.width * locationRect.height)/region); // NB: THIS IS ARBITARY DEPENDING ON RECTANGLE SIZE...
 
 		//Detect Gestures
 		GestureDetect(x_sum, y_sum, count);
@@ -429,4 +440,34 @@ static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int 
     p.x = cvRound(pt2.x + tipSize * cos(angle - CV_PI / 4));
     p.y = cvRound(pt2.y + tipSize * sin(angle - CV_PI / 4));
     line(img, p, pt2, color, thickness, line_type);
+}
+
+
+Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame){
+	// Initialise size of velocity to return (default 0)
+	Size retVel = Size(0,0);
+	float x_val = 0.0;
+	float y_val = 0.0;
+
+	// draw vector onto image
+	rectangle(color_current_frame, locationRect, CV_RGB(0,255,0),1,8,0);
+
+	// cycle through velocities
+	for (int i=0; i<velVector.size(); i++){
+		// check if within rectangle
+		if(velVector.at(i).x > locationRect.x && velVector.at(i).x < locationRect.x+locationRect.width) {
+			if (velVector.at(i).x > locationRect.y && velVector.at(i).x < locationRect.y+locationRect.height) {
+
+				// Point is within rectangle, use velocity value
+				x_val+=velVector.at(i).width;
+				y_val+=velVector.at(i).height;
+
+			}
+		}
+	}
+
+	retVel.width = x_val;
+	retVel.height = y_val;
+
+	return(retVel);
 }
