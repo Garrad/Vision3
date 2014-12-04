@@ -16,6 +16,8 @@
 #include <iostream>
 #include <stdio.h>
 
+#include "gradients.h"
+
 using namespace std;
 using namespace cv;
 
@@ -62,8 +64,8 @@ int main( int argc, const char** argv )
 
 	int region = atoi(argv[1]);
 	int resolution = atoi(argv[2]);
-	int showDerivatives = atoi(argv[3]);
-
+	//int showDerivatives = atoi(argv[3]);
+	int showDerivatives=1;
 	//Create variables for various frames
 	Mat color_current_frame;
 	Mat current_frame;
@@ -71,6 +73,10 @@ int main( int argc, const char** argv )
 	Mat x_motion_frame;
 	Mat y_motion_frame;
 	Mat v;
+
+	Mat IxMat;
+	Mat IyMat;
+	Mat ItMat;
 
 	//Color of motion vector line
 	Scalar red = CV_RGB(255,0,0);
@@ -86,6 +92,13 @@ int main( int argc, const char** argv )
 	//namedWindow("Y Motion vectors", 1);
 	namedWindow("Motion vectors", 1);
 
+
+	if (showDerivatives==1){
+		namedWindow("Ix",1);
+		namedWindow("Iy",1);
+		namedWindow("It",1);
+	}
+
 	//Main loop
 	for(;;)
 	{
@@ -95,6 +108,17 @@ int main( int argc, const char** argv )
 		//Get new frame and grayscale
 		cap >> color_current_frame;
 		cvtColor(color_current_frame, current_frame, CV_BGR2GRAY);
+
+
+		// show images if needed
+		if(showDerivatives==1) {
+			if(old_frame.data) {
+				calcIMatrices(old_frame, current_frame, IxMat, IyMat, ItMat);
+				imshow("Ix",IxMat);
+				imshow("Iy",IyMat);
+				imshow("It",ItMat);
+			}
+		}
 		
 		//Initialise Mats
 		//x_motion_frame = Mat::zeros(current_frame.rows, current_frame.cols, CV_8UC1);
