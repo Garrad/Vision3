@@ -7,11 +7,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // header inclusion
+/*
 #include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/objdetect/objdetect.hpp"
 #include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/opencv.hpp"
 #include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/core/core.hpp"
 #include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/highgui/highgui.hpp"
-#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/imgproc/imgproc.hpp"
+#include "/usr/local/Cellar/opencv/2.4.9/include/opencv2/imgproc/imgproc.hpp"*/
+#include "opencv2/opencv.hpp"
 
 #include <iostream>
 #include <stdio.h>
@@ -252,6 +254,7 @@ int main( int argc, const char** argv )
 		}
 		else if (frame_count >= 100)
 		{
+
 			if (count > 0)
 			{
 				GT.add_frame(x_sum, y_sum, count);
@@ -262,9 +265,9 @@ int main( int argc, const char** argv )
 			T.draw_ball(color_current_frame);
 			T.move_ball(-mean_vec.x, mean_vec.y);
 
-			char* score_string;
-			sprintf(score_string, "Score: %d", score);
-			cv::putText(color_current_frame,score_string,cvPoint(20,20),1,1,cvScalar(255));
+			//char* score_string;
+			//sprintf(score_string, "Score: %d", score);
+			//cv::putText(color_current_frame,score_string,cvPoint(20,20),1,1,cvScalar(255));
 
 			//Restart if we are at the target
 			Rect intersec;
