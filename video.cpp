@@ -43,7 +43,7 @@ float Iy(Mat frame_t, Mat frame_t2, int x, int y);
 float It(Mat frame_t, Mat frame_t2, int x, int y);
 Mat LkTracker(Mat frame_t, Mat frame_t2, int x, int y, int size);
 static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int thickness, int line_type, int shift, double tipLength);
-Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count, int gamePlay);
+Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count, int gamePlay, int gameRunning);
 
 int main( int argc, const char** argv )
 {
@@ -80,7 +80,7 @@ int main( int argc, const char** argv )
 	//Get command line args
 	int region = atoi(argv[1]);
 	int resolution = atoi(argv[2]);
-	int showDerivatives = atoi(argv[3]);
+	int showDerivatives = atoi(argv[3]); // NB: If showDerivatives==1, game will not appear, just shows v. vectors and gradients
 
 	//Open video stream if possible
 	if (argc < 4)
@@ -236,7 +236,7 @@ int main( int argc, const char** argv )
 
 		Rect locationRect = Rect((nCols/4),(nRows/4),nCols/2,nRows/2);
 		Size velInRect;
-		velInRect = getVelocityInFrame(locationRect, velVector, color_current_frame, &count, hasGameStarted);
+		velInRect = getVelocityInFrame(locationRect, velVector, color_current_frame, &count, hasGameStarted, showDerivatives);
 		
 		x_sum = velInRect.width;
 		y_sum=  velInRect.height;
@@ -260,11 +260,11 @@ int main( int argc, const char** argv )
 				GT.add_frame(x_sum, y_sum, count);
 				mean_vec = GT.detect();
 			}
-
-			T.draw_target(color_current_frame);
-			T.draw_ball(color_current_frame);
-			T.move_ball(-mean_vec.x, mean_vec.y);
-
+			if(showDerivatives==0){
+				T.draw_target(color_current_frame);
+				T.draw_ball(color_current_frame);
+				T.move_ball(-mean_vec.x, mean_vec.y);
+			}
 			//char* score_string;
 			//sprintf(score_string, "Score: %d", score);
 			//cv::putText(color_current_frame,score_string,cvPoint(20,20),1,1,cvScalar(255));
@@ -493,40 +493,42 @@ static void arrowedLine(Mat img, Point pt1, Point pt2, const Scalar& color, int 
 }
 
 
-Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count, int gamePlay){
+Size getVelocityInFrame(Rect locationRect, vector<Rect> velVector, Mat& color_current_frame, int* count, int gamePlay, int gameRunning){
 	
 	// Initialise size of velocity to return (default 0)
 	Size retVel = Size(0,0);
 	float x_val = 0.0;
 	float y_val = 0.0;
 
-	// draw vector onto image
-	if (gamePlay==1)
-	{
-		rectangle(color_current_frame, locationRect, CV_RGB(0,255,0),1,8,0);
-	}
-	else
-	{
-		rectangle(color_current_frame, locationRect, CV_RGB(255,0,0),1,8,0);
-	}
+	// check to see if rectangle is needed
+	if(gameRunning==0){
+		// draw rectangle onto image
+		if (gamePlay==1)
+		{
+			rectangle(color_current_frame, locationRect, CV_RGB(0,255,0),1,8,0);
+		}
+		else
+		{
+			rectangle(color_current_frame, locationRect, CV_RGB(255,0,0),1,8,0);
+		}
 
-	//Reset counter to zero
-	*count = 0;
-	// cycle through velocities
-	for (int i=0; i<velVector.size(); i++){
-		// check if within rectangle
-		if(velVector.at(i).x > locationRect.x && velVector.at(i).x < locationRect.x+locationRect.width) {
-			if (velVector.at(i).y > locationRect.y && velVector.at(i).y < locationRect.y+locationRect.height) {
+		//Reset counter to zero
+		*count = 0;
+		// cycle through velocities
+		for (int i=0; i<velVector.size(); i++){
+			// check if within rectangle
+			if(velVector.at(i).x > locationRect.x && velVector.at(i).x < locationRect.x+locationRect.width) {
+				if (velVector.at(i).y > locationRect.y && velVector.at(i).y < locationRect.y+locationRect.height) {
 
-				// Point is within rectangle, use velocity value
-				x_val+=velVector.at(i).width;
-				y_val+=velVector.at(i).height;
-				//Increment count
-				(*count)++;
+					// Point is within rectangle, use velocity value
+					x_val+=velVector.at(i).width;
+					y_val+=velVector.at(i).height;
+					//Increment count
+					(*count)++;
+				}
 			}
 		}
 	}
-
 	//Return values
 	retVel.width = x_val;
 	retVel.height = y_val;
